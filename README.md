@@ -1,5 +1,5 @@
 Overview:
-This code performs data loading, preprocessing, model training, and evaluation for a revenue prediction task using machine learning models such as Linear Regression, 
+Performing data loading, preprocessing, model training, and evaluation for a revenue prediction task using machine learning models such as Linear Regression, 
 Random Forest Regressor, Support Vector Regression (SVR), and a Multi-Layer Perceptron (MLP) using TensorFlow.
 
 Key Libraries Used:
