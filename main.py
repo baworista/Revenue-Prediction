@@ -55,22 +55,14 @@ def plot_prediction_analysis(y_true, y_pred, fig_id="prediction_analysis"):
     """
     # Scatter Plot of Predicted vs. Actual Values
     plt.figure(figsize=(10, 6))
-    plt.scatter(y_true, y_pred, alpha=0.5)
+    plt.scatter(y_true, y_pred, alpha=0.5, label='Predicted', color='red')
+    plt.plot(y_true, y_true, label='Actual', color='blue')
     plt.xlabel("Actual Values")
     plt.ylabel("Predicted Values")
     plt.title("Scatter Plot of Predicted vs. Actual Values")
+    plt.legend()
     plt.grid(True)
     save_fig(fig_id + "_scatter_plot_actual_vs_predicted")
-
-    # Residual Plot
-    plt.figure(figsize=(10, 6))
-    plt.scatter(y_true, y_true - y_pred, alpha=0.5)
-    plt.xlabel("Actual Values")
-    plt.ylabel("Residuals")
-    plt.title("Residual Plot")
-    plt.axhline(y=0, color='r', linestyle='-')
-    plt.grid(True)
-    save_fig(fig_id + "_residual_plot")
 
     # Distribution of Residuals
     plt.figure(figsize=(10, 6))
@@ -247,10 +239,48 @@ print("Test Random forest regressor MAPE: ", mean_absolute_percentage_error(y_te
 
 plot_prediction_analysis(y_test_split, y_test_predict, "RF_Regression_Actual_Predicted")
 
+# Feature Importance for RandomForest
+feature_importances_rf = RFmodel.feature_importances_
+
+# Get feature names
+feature_names = numeric_columns + list(preprocessor.transformers_[1][1]['onehot'].get_feature_names_out(non_numeric_columns))
+
+# Create a DataFrame for feature importances
+importance_df_rf = pd.DataFrame({'Feature': feature_names, 'Importance': feature_importances_rf})
+importance_df_rf = importance_df_rf.sort_values(by='Importance', ascending=False)
+
+# Select top 10 features
+top_10_features_rf = importance_df_rf.head(10)
+
+# Plotting Feature Importances
+plt.figure(figsize=(14, 8))
+plt.barh(top_10_features_rf['Feature'], top_10_features_rf['Importance'], color='skyblue')
+plt.xlabel('Importance')
+plt.ylabel('Feature')
+plt.title('Top 10 RandomForest Feature Importances')
+plt.gca().invert_yaxis()  # Highest importance at the top
+save_fig("Top_10_RandomForest_Feature_Importances")
+
+plt.show()
+
+# Print the top 10 feature importances DataFrame for review
+print(top_10_features_rf)
+
+
 
 # Support vector regression model
-SVRmodel =  SVR(kernel="poly", gamma=5, epsilon=5, C=5)
-SVRmodel.fit(X_train_split, y_train_split)
+param_grid_svr = {
+    'kernel': ['poly'],
+    'gamma': [5],
+    'epsilon': [5],
+    'C': [5]
+}
+
+grid_search_svr = GridSearchCV(estimator=SVR(), param_grid=param_grid_svr, cv=3, scoring='neg_mean_squared_error', n_jobs=-1)
+grid_search_svr.fit(X_train_split, y_train_split)
+print("Best parameters for SVR:", grid_search_svr.best_params_)
+SVRmodel = grid_search_svr.best_estimator_
+
 
 y_predict = SVRmodel.predict(X_train_split)
 print("Training SVR regressor RMSE: ", root_mean_squared_error(y_train_split, y_predict))
@@ -275,7 +305,7 @@ else:
     print("No GPU found. Running on CPU.")
 
 
-# Multi-Layer Perceptron(Worse than LinearRegression and RandomForest)
+# Multi-Layer Perceptron
 X_train, X_valid, y_train, y_valid = train_test_split(
     X_train_split, y_train_split, test_size=0.1, random_state=42)
 
